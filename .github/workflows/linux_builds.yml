@@ -1,0 +1,30 @@
+name: Linux default builds
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, ubuntu-latest]
+        cc: [gcc, clang]
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Dependencies
+      run: |
+        sudo apt install -q -y libcbor-dev libudev-dev original-awk
+
+    - name: Build
+      env: 
+          CC: ${{ matrix.cc }}
+      run: |
+        ${CC} --version
+        # Check exports.
+        (cd src && ./diff_exports.sh)
+        mkdir build
+        (cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..)
+        make -C build
+        sudo make -C build install
