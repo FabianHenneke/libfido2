@@ -7,8 +7,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, ubuntu-latest]
-        cc: [gcc, clang]
+        os: [ubuntu-18.04]
+        cc: [gcc-7, gcc-8, gcc-9, clang-8, clang-9]
 
     steps:
     - uses: actions/checkout@v1
