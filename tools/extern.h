@@ -18,7 +18,7 @@ struct blob {
 	size_t len;
 };
 
-#define TOKEN_OPT	"CDILPRSVbcdei:k:n:r"
+#define TOKEN_OPT	"CDILPRSVbcdexi:k:n:r"
 
 #define FLAG_DEBUG	0x01
 #define FLAG_QUIET	0x02
@@ -48,6 +48,7 @@ int credman_delete_rk(fido_dev_t *, const char *, char *);
 int credman_get_metadata(fido_dev_t *, const char *);
 int credman_list_rk(char *, const char *);
 int credman_list_rp(char *);
+int credman_list_exposed(char *);
 int credman_print_rk(fido_dev_t *, const char *, char *, char *);
 int pin_change(char *);
 int pin_set(char *);

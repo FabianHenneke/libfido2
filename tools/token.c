@@ -305,6 +305,7 @@ token_list(int argc, char **argv, char *path)
 	size_t ndevs;
 	const char *rp_id = NULL;
 	int enrolls = 0;
+	int xposed = 0;
 	int keys = 0;
 	int rplist = 0;
 	int ch;
@@ -324,6 +325,9 @@ token_list(int argc, char **argv, char *path)
 		case 'r':
 			rplist = 1;
 			break;
+		case 'x':
+			xposed = 1;
+			break;
 		default:
 			break; /* ignore */
 		}
@@ -335,6 +339,8 @@ token_list(int argc, char **argv, char *path)
 		return (credman_list_rk(path, rp_id));
 	if (rplist)
 		return (credman_list_rp(path));
+	if (xposed)
+		return (credman_list_exposed(path));
 
 	if ((devlist = fido_dev_info_new(64)) == NULL)
 		errx(1, "fido_dev_info_new");

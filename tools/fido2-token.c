@@ -53,6 +53,7 @@ main(int argc, char **argv)
 		case 'k':
 		case 'n':
 		case 'r':
+		case 'x':
 			break; /* ignore */
 		case 'd':
 			flags = FIDO_DEBUG;
