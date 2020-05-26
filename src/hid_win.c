@@ -221,7 +221,7 @@ fido_hid_manifest(fido_dev_info_t *devlist, size_t ilen, size_t *olen)
 	if (devlist == NULL)
 		return (FIDO_ERR_INVALID_ARGUMENT);
 
-	devinfo = SetupDiGetClassDevsA(&hid_guid, NULL, NULL,
+	devinfo = SetupDiGetClassDevsA(&hid_guid, "usb", NULL,
 	    DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
 	if (devinfo == INVALID_HANDLE_VALUE) {
 		fido_log_debug("%s: SetupDiGetClassDevsA", __func__);
