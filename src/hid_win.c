@@ -14,6 +14,8 @@
 #include <windows.h>
 #include <setupapi.h>
 #include <initguid.h>
+#include <devpkey.h>
+#include <devpropdef.h>
 #include <hidclass.h>
 #include <hidsdi.h>
 
@@ -209,6 +211,9 @@ fido_hid_manifest(fido_dev_info_t *devlist, size_t ilen, size_t *olen)
 	HDEVINFO				 devinfo = INVALID_HANDLE_VALUE;
 	SP_DEVICE_INTERFACE_DATA		 ifdata;
 	SP_DEVICE_INTERFACE_DETAIL_DATA_A	*ifdetail = NULL;
+	SP_DEVINFO_DATA				 devinfo_data;
+	wchar_t					*parent = NULL;
+	DWORD					 parent_type = DEVPROP_TYPE_STRING;
 	DWORD					 len = 0;
 	DWORD					 idx = 0;
 	int					 r = FIDO_ERR_INTERNAL;
@@ -221,7 +226,7 @@ fido_hid_manifest(fido_dev_info_t *devlist, size_t ilen, size_t *olen)
 	if (devlist == NULL)
 		return (FIDO_ERR_INVALID_ARGUMENT);
 
-	devinfo = SetupDiGetClassDevsA(&hid_guid, "usb", NULL,
+	devinfo = SetupDiGetClassDevsA(&hid_guid, NULL, NULL,
 	    DIGCF_DEVICEINTERFACE | DIGCF_PRESENT);
 	if (devinfo == INVALID_HANDLE_VALUE) {
 		fido_log_debug("%s: SetupDiGetClassDevsA", __func__);
@@ -230,7 +235,7 @@ fido_hid_manifest(fido_dev_info_t *devlist, size_t ilen, size_t *olen)
 
 	ifdata.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 
-	while (SetupDiEnumDeviceInterfaces(devinfo, NULL, &hid_guid, idx++,
+	while (SetupDiEnumDeviceInterfaces(devinfo, NULL, &hid_guid, idx,
 	    &ifdata) == true) {
 		/*
 		 * "Get the required buffer size. Call
@@ -264,6 +269,41 @@ fido_hid_manifest(fido_dev_info_t *devlist, size_t ilen, size_t *olen)
 			goto fail;
 		}
 
+		memset(&devinfo_data, 0, sizeof(devinfo_data));
+		devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
+		if (SetupDiEnumDeviceInfo(devinfo, idx, &devinfo_data)
+		    == false) {
+			fido_log_debug("%s: SetupDiEnumDeviceInfo", __func__);
+			goto next;
+		}
+
+		if (SetupDiGetDevicePropertyW(devinfo, &devinfo_data,
+		    &DEVPKEY_Device_Parent, &parent_type, NULL, 0, &len, 0)
+		    != false || GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+			fido_log_debug("%s: SetupDiGetDevicePropertyW 1",
+			    __func__);
+			goto next;
+		}
+
+		if ((parent = malloc(len)) == NULL) {
+			fido_log_debug("%s: malloc", __func__);
+			goto next;
+		}
+
+		if (SetupDiGetDevicePropertyW(devinfo, &devinfo_data,
+		    &DEVPKEY_Device_Parent, &parent_type, (PBYTE*)parent, len,
+		    NULL, 0) == false) {
+			fido_log_debug("%s: SetupDiGetDevicePropertyW 2",
+			    __func__);
+			goto next;
+		}
+
+		if (wcsncmp(parent, L"USB\\", 4) != 0 &&
+		    wcsncmp(parent, L"BTHENUM\\", 8) != 0) {
+			fido_log_debug("%s: skipping %S", __func__, parent);
+			goto next;
+		}
+
 		if (copy_info(&devlist[*olen], ifdetail->DevicePath) == 0) {
 			devlist[*olen].io = (fido_dev_io_t) {
 				fido_hid_open,
@@ -274,7 +314,11 @@ fido_hid_manifest(fido_dev_info_t *devlist, size_t ilen, size_t *olen)
 			if (++(*olen) == ilen)
 				break;
 		}
+	next:
+		idx++;
 
+		free(parent);
+		parent = NULL;
 		free(ifdetail);
 		ifdetail = NULL;
 	}
