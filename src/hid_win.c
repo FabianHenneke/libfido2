@@ -21,6 +21,16 @@
 
 #include "fido.h"
 
+#if defined(__MINGW32__) &&  __MINGW64_VERSION_MAJOR < 6
+WINSETUPAPI WINBOOL WINAPI SetupDiGetDevicePropertyW(HDEVINFO,
+    PSP_DEVINFO_DATA, const DEVPROPKEY *, DEVPROPTYPE *, PBYTE,
+    DWORD, PDWORD, DWORD);
+#endif
+
+#if defined(__MINGW32__)
+DEFINE_DEVPROPKEY(DEVPKEY_Device_Parent, 0x4340a6c5, 0x93fa, 0x4706, 0x97, 0x2c, 0x7b, 0x64, 0x80, 0x08, 0xa5, 0xa7, 8);
+#endif
+
 struct hid_win {
 	HANDLE	dev;
 	size_t	report_in_len;
@@ -291,7 +301,7 @@ fido_hid_manifest(fido_dev_info_t *devlist, size_t ilen, size_t *olen)
 		}
 
 		if (SetupDiGetDevicePropertyW(devinfo, &devinfo_data,
-		    &DEVPKEY_Device_Parent, &parent_type, (PBYTE*)parent, len,
+		    &DEVPKEY_Device_Parent, &parent_type, (PBYTE)parent, len,
 		    NULL, 0) == false) {
 			fido_log_debug("%s: SetupDiGetDevicePropertyW 2",
 			    __func__);
