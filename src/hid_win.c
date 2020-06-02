@@ -308,8 +308,7 @@ fido_hid_manifest(fido_dev_info_t *devlist, size_t ilen, size_t *olen)
 			goto next;
 		}
 
-		if (wcsncmp(parent, L"USB\\", 4) != 0 &&
-		    wcsncmp(parent, L"BTHENUM\\", 8) != 0) {
+		if (wcsncmp(parent, L"USB\\", 4) != 0) {
 			fido_log_debug("%s: skipping %S", __func__, parent);
 			goto next;
 		}
